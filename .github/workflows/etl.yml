@@ -25,6 +25,6 @@ jobs:
     - name: Run ETL script
       run: python etl.py
       env:
-        DB_HOST: ${{ secrets.DB_HOST }}
-        DB_USER: ${{ secrets.DB_USER }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_HOST: ${{ db.obcvwhncqwwbrwqchums.supabase.co}}
+        DB_USER: ${{postgres}}
+        DB_PASSWORD: ${{ Ambibuzz@2924 }}
