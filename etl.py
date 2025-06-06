@@ -8,9 +8,9 @@ from email.message import EmailMessage
 # ---------------------- Fetch Data ----------------------
 def fetch_opensky():
     url = "https://opensky-network.org/api/states/all"
-    username = os.environ.get("OPENSKY_USER")     # Optional: Use if added
+    username = os.environ.get("OPENSKY_USER")
     password = os.environ.get("OPENSKY_PASS")
-    
+
     auth = (username, password) if username and password else None
     response = requests.get(url, auth=auth)
     data = response.json()
@@ -45,18 +45,27 @@ def insert_to_db(df):
     cursor.close()
     conn.close()
 
-# ---------------------- Send Email Notification ----------------------
+# ---------------------- Safe Email Sender ----------------------
 def send_email(subject, body):
-    msg = EmailMessage()
-    msg.set_content(body)
-    msg['Subject'] = subject
-    msg['From'] = os.environ['EMAIL_SENDER']
-    msg['To'] = os.environ['EMAIL_RECIPIENT']
+    try:
+        sender = os.environ['EMAIL_SENDER']
+        recipient = os.environ['EMAIL_RECIPIENT']
+        password = os.environ['EMAIL_PASSWORD']
 
-    server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-    server.login(os.environ['EMAIL_SENDER'], os.environ['EMAIL_PASSWORD'])
-    server.send_message(msg)
-    server.quit()
+        msg = EmailMessage()
+        msg.set_content(body)
+        msg['Subject'] = subject
+        msg['From'] = sender
+        msg['To'] = recipient
+
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.login(sender, password)
+        server.send_message(msg)
+        server.quit()
+    except KeyError:
+        print("⚠️ Email not sent — missing email environment variables.")
+    except Exception as e:
+        print(f"⚠️ Failed to send email: {e}")
 
 # ---------------------- Main ETL Runner ----------------------
 try:
