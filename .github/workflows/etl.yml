@@ -33,3 +33,4 @@ jobs:
         EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
         OPENSKY_USER: ${{ secrets.OPENSKY_USER }}
         OPENSKY_PASS: ${{ secrets.OPENSKY_PASS }}
+
