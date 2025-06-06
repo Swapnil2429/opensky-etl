@@ -10,18 +10,17 @@ def fetch_opensky():
     url = "https://opensky-network.org/api/states/all"
     username = os.environ.get("OPENSKY_USER")
     password = os.environ.get("OPENSKY_PASS")
-
     auth = (username, password) if username and password else None
+
     response = requests.get(url, auth=auth)
     data = response.json()
-
     return pd.DataFrame(data['states'], columns=[
         'icao24', 'callsign', 'origin_country', 'time_position',
         'last_contact', 'longitude', 'latitude', 'baro_altitude',
         'on_ground', 'velocity', 'true_track', 'vertical_rate'
     ])
 
-# ---------------------- Insert to DB ----------------------
+# ---------------------- Insert to Supabase ----------------------
 def insert_to_db(df):
     conn = psycopg2.connect(
         host=os.environ['DB_HOST'],
@@ -31,7 +30,6 @@ def insert_to_db(df):
         port=5432
     )
     cursor = conn.cursor()
-
     for _, row in df.iterrows():
         cursor.execute("""
             INSERT INTO flights (
@@ -40,12 +38,11 @@ def insert_to_db(df):
                 on_ground, velocity, true_track, vertical_rate
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, tuple(row))
-
     conn.commit()
     cursor.close()
     conn.close()
 
-# ---------------------- Safe Email Sender ----------------------
+# ---------------------- Email Notification ----------------------
 def send_email(subject, body):
     try:
         sender = os.environ['EMAIL_SENDER']
@@ -63,16 +60,16 @@ def send_email(subject, body):
         server.send_message(msg)
         server.quit()
     except KeyError:
-        print("⚠️ Email not sent — missing email environment variables.")
+        print("⚠️ Email skipped — missing environment variables.")
     except Exception as e:
-        print(f"⚠️ Failed to send email: {e}")
+        print(f"⚠️ Email failed to send: {e}")
 
-# ---------------------- Main ETL Runner ----------------------
+# ---------------------- Main Runner ----------------------
 try:
     df = fetch_opensky()
     df.dropna(inplace=True)
     insert_to_db(df)
-    send_email("✅ ETL Success", f"{len(df)} records loaded into Supabase.")
+    send_email("✅ ETL Success", f"{len(df)} records inserted into Supabase.")
 except Exception as e:
-    send_email("❌ ETL Failed", f"Error during ETL run:\n\n{str(e)}")
+    send_email("❌ ETL Failed", f"Error:\n{str(e)}")
     raise
